@@ -60,3 +60,30 @@ liberee
 | 3 | Dès qu'un **en-tête est inclus deux fois** dans un même `.c`, ce qui arrive presque toujours **indirectement** : par exemple `main.c` inclut `liste.h` et `test.h`, et `test.h` inclut lui-même `liste.h` (parce qu'il utilise `Maillon`). Le programmeur n'a écrit l'inclusion qu'une fois par fichier, mais le préprocesseur recopie `liste.h` deux fois. |
 
 > **Remarque sur le cas 3.** Avec gcc 15 sans option, **le cas 3 compile sans erreur** : la norme par défaut est C23 (`__STDC_VERSION__ = 202311L`), qui autorise à redéfinir une structure **à l'identique**. L'erreur attendue n'apparaît qu'avec `-std=c11` (l'option du Makefile du TP). La garde d'inclusion reste indispensable : dès que le `.h` contient une définition de variable ou de fonction (`int compteur = 0;`), même C23 refuse la double inclusion.
+
+---
+
+## Exercice 4 - Écrire un premier Makefile
+
+Trous remplis : `main.o: main.c liste.h` et `liste.o: liste.c liste.h`.
+Vérification des tabulations avec `cat -A Makefile` : les lignes de commande commencent bien par `^I`.
+
+`make clean` puis `make` :
+
+```
+rm -f main.o liste.o demo
+gcc -Wall -Wextra -std=c11 -g -c main.c
+gcc -Wall -Wextra -std=c11 -g -c liste.c
+gcc -Wall -Wextra -std=c11 -g -o demo main.o liste.o
+```
+
+Second `make`, sans rien modifier :
+
+```
+make: 'demo' is up to date.
+```
+
+| Question | Réponse |
+|---|---|
+| A | `make` compare les **dates de modification** : une cible n'est reconstruite que si elle n'existe pas ou si l'une de ses dépendances est **plus récente** qu'elle. Ici `main.o` et `liste.o` sont plus récents que leurs `.c` et `.h`, et `demo` plus récent que les `.o` : il n'y a rien à faire. |
+| B (message exact) | `Makefile:2: *** missing separator.  Stop.` (la ligne 2 est la commande où la tabulation a été remplacée par quatre espaces) |
