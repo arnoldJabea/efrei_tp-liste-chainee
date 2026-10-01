@@ -42,3 +42,21 @@ liberee
 |---|---|
 | A | **Deux** : `main.o` et `liste.o`, un par fichier `.c`. Il n'y a **pas** de `liste.h.o` : un en-tête n'est jamais compilé seul, le préprocesseur **recopie son texte** dans chaque `.c` qui l'inclut (`#include` = copier-coller). |
 | B | Elle **recompile tout à chaque fois**, même les fichiers qui n'ont pas changé, et ne garde aucun `.o`. Sur 3 fichiers c'est négligeable ; sur un projet de centaines de fichiers, la compilation séparée ne recompile que ce qui a été modifié. |
+
+---
+
+## Exercice 3 - Provoquer les trois erreurs classiques
+
+| Cas | Premier message exact | Compilation ou lien |
+|---|---|---|
+| 1 | `main.o: in function 'main': main.c:(.text+0x35): undefined reference to 'liste_inserer'` puis `collect2: error: ld returned 1 exit status` | **Lien** |
+| 2 | `main.c:5:5: error: unknown type name 'Maillon'` | Compilation |
+| 3 | `liste.h:4:16: error: redefinition of 'struct Maillon'` (avec `-std=c11`, voir la remarque) | Compilation |
+
+| Question | Réponse |
+|---|---|
+| 1 | Le **cas 1**. On le voit à `ld` dans le message (`/usr/bin/x86_64-linux-gnu-ld.bfd`, `ld returned 1 exit status`) et à la forme `main.c:(.text+0x35)` : un **décalage dans le code machine** du fichier objet au lieu d'un numéro de ligne. `main.c` s'est compilé sans problème ; c'est l'assemblage qui ne trouve pas le code des fonctions, puisque `liste.o` manque. |
+| 2 | Le **premier** : `unknown type name 'Maillon'`. Les suivants (`implicit declaration of function 'liste_inserer'`..., `assignment to 'int *' from 'int'`) en découlent tous : sans `liste.h`, le compilateur ne connaît ni le type ni les fonctions. Une seule correction, remettre l'`#include`, les fait toutes disparaître. |
+| 3 | Dès qu'un **en-tête est inclus deux fois** dans un même `.c`, ce qui arrive presque toujours **indirectement** : par exemple `main.c` inclut `liste.h` et `test.h`, et `test.h` inclut lui-même `liste.h` (parce qu'il utilise `Maillon`). Le programmeur n'a écrit l'inclusion qu'une fois par fichier, mais le préprocesseur recopie `liste.h` deux fois. |
+
+> **Remarque sur le cas 3.** Avec gcc 15 sans option, **le cas 3 compile sans erreur** : la norme par défaut est C23 (`__STDC_VERSION__ = 202311L`), qui autorise à redéfinir une structure **à l'identique**. L'erreur attendue n'apparaît qu'avec `-std=c11` (l'option du Makefile du TP). La garde d'inclusion reste indispensable : dès que le `.h` contient une définition de variable ou de fonction (`int compteur = 0;`), même C23 refuse la double inclusion.
